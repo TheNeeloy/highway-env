@@ -26,8 +26,8 @@ class AbstractEnv(gym.Env):
     speed. The action space is fixed, but the observation space and reward function must be defined in the
     environment implementations.
     """
-    observation_type: ObservationType
-    action_type: ActionType
+    # observation_type: ObservationType
+    # action_type: ActionType
     _monitor: Optional[gym.wrappers.Monitor]
     metadata = {
         'render.modes': ['human', 'rgb_array'],
@@ -52,8 +52,10 @@ class AbstractEnv(gym.Env):
         # Spaces
         self.action_type = None
         self.action_space = None
-        self.observation_type = None
-        self.observation_space = None
+        # self.observation_type = None
+        # self.observation_space = None
+        self.observation_types = None
+        self.observation_spaces = None
         self.define_spaces()
 
         # Running
@@ -88,8 +90,11 @@ class AbstractEnv(gym.Env):
         :return: a configuration dict
         """
         return {
-            "observation": {
-                "type": "Kinematics"
+            # "observation": {
+            #     "type": "Kinematics"
+            # },
+            "observations": {
+                "observation1": {"type": "Kinematics"}
             },
             "action": {
                 "type": "DiscreteMetaAction"
@@ -125,9 +130,14 @@ class AbstractEnv(gym.Env):
         """
         Set the types and spaces of observation and action from config.
         """
-        self.observation_type = observation_factory(self, self.config["observation"])
+        # self.observation_type = observation_factory(self, self.config["observation"])
+        self.observation_types = []
+        self.observation_spaces = []
+        for key, value in self.config['observations'].items():
+            self.observation_types.append(observation_factory(self, value))
+            self.observation_spaces.append(self.observation_types[-1].space())
         self.action_type = action_factory(self, self.config["action"])
-        self.observation_space = self.observation_type.space()
+        # self.observation_space = self.observation_type.space()
         self.action_space = self.action_type.space()
 
     def _reward(self, action: Action) -> float:
@@ -188,7 +198,15 @@ class AbstractEnv(gym.Env):
         self.done = False
         self._reset()
         self.define_spaces()  # Second, to link the obs and actions to the vehicles once the scene is created
-        return self.observation_type.observe()
+
+        observations = []
+        for observation_type in self.observation_types:
+            print(type(observation_type))
+            # observations.append(observation_type.observe(reset=True))
+            observations.append(observation_type.observe())
+
+        return observations
+        # return self.observation_type.observe()
 
     def _reset(self) -> None:
         """
@@ -214,7 +232,11 @@ class AbstractEnv(gym.Env):
         self.steps += 1
         self._simulate(action)
 
-        obs = self.observation_type.observe()
+        # obs = self.observation_type.observe()
+        obs = []
+        for observation_type in self.observation_types:
+            # obs.append(observation_type.observe(reset=False))
+            obs.append(observation_type.observe())
         reward = self._reward(action)
         terminal = self._is_terminal()
         info = self._info(obs, action)

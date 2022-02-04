@@ -124,7 +124,18 @@ class EnvViewer(object):
             simulation_frequency=self.env.config["simulation_frequency"],
             offscreen=self.offscreen)
 
-        ObservationGraphics.display(self.env.observation_type, self.sim_surface)
+        # ObservationGraphics.display(self.env.observation_type, self.sim_surface)
+        from highway_env.envs.common.observation import LidarObservation
+
+        has_lidar_obs = False
+        for observation_type in self.env.observation_types:
+            if isinstance(observation_type, LidarObservation):
+                ObservationGraphics.display(observation_type, self.sim_surface)
+                has_lidar_obs = True
+                break
+            
+        if not has_lidar_obs:
+            ObservationGraphics.display(self.env.observation_types[-1], self.sim_surface)
 
         if not self.offscreen:
             self.screen.blit(self.sim_surface, (0, 0))
@@ -212,7 +223,8 @@ class EventHandler(object):
 
 
 class ObservationGraphics(object):
-    COLOR = (0, 0, 0)
+    # COLOR = (0, 0, 0)
+    COLOR = (255, 0, 0)
 
     @classmethod
     def display(cls, obs, sim_surface):
@@ -230,4 +242,5 @@ class ObservationGraphics(object):
         points = [(surface.pos2pix(lidar_observation.origin[0] + r[i] * np.cos(psi[i]),
                                    lidar_observation.origin[1] + r[i] * np.sin(psi[i])))
                   for i in range(np.size(psi))]
-        pygame.draw.lines(surface, ObservationGraphics.COLOR, True, points, 1)
+        # pygame.draw.lines(surface, ObservationGraphics.COLOR, True, points, 1)
+        pygame.draw.lines(surface, ObservationGraphics.COLOR, True, points, 3)
